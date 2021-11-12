@@ -42,29 +42,37 @@ def Siranoalvegetir():
     return jsonify(d)
 
 
-@app.route('/api/islemisonlandir', methods=['GET'])
+@app.route('/api/islemisonlandir')
 def Islemisonlandir():
     imlec = db.cursor()
-    veri =imlec.execute("SELECT MIN(Id) FROM Numbers where Islemdurumu=('İşleniyor')").fetchone()
+    imlec.execute("SELECT MIN(Id) FROM Numbers where Islemdurumu=('İşleniyor')").fetchone()
     imlec.execute("Update Numbers Set Islemdurumu = ('Tamamlandı') Where Id = (SELECT MIN(Id) FROM Numbers where Islemdurumu=('İşleniyor'))")
     db.commit()
     return "islem tamamlandı"
 
 
 
-@app.route('/api/islemal', methods=['GET'])
+@app.route('/api/islemal')
 def islemal():
     imlec = db.cursor()
-    d=imlec.execute("SELECT MIN(Id) FROM Numbers where Islemdurumu=('Bekliyor')").fetchone()
+    imlec.execute("SELECT MIN(Id) FROM Numbers where Islemdurumu=('Bekliyor')").fetchone()
     imlec.execute("Update Numbers Set Islemdurumu = ('İşleniyor') Where Id = (SELECT MIN(Id) FROM Numbers where Islemdurumu=('Bekliyor'))")
     db.commit()
     return "isleme alındı"
 
 
-@app.route('/api/islemdekinigoster', methods=['GET'])
+@app.route('/api/islemdekinigoster')
 def islemdekinigoster():
     imlec = db.cursor()
     d=imlec.execute("SELECT MIN(Id) FROM Numbers where Islemdurumu=('İşleniyor')").fetchone()
+    return jsonify(d)
+
+@app.route('/api/gunsonu')
+def gunsonu():
+    imlec = db.cursor()
+    d=imlec.execute("SELECT COUNT(Id) FROM Numbers WHERE Islemdurumu = ('Tamamlandı')").fetchone()
+    imlec.execute("TRUNCATE TABLE Numbers")
+    db.commit()
     return jsonify(d)
 
 if __name__ == "__main__":
