@@ -13,11 +13,9 @@ class ObjectIdEncoder(json.JSONEncoder):
             return str(obj)
         return super(ObjectIdEncoder, self).default(obj)
 
-
 app = Flask(__name__)
 app.secret_key = 'bizim cok zor gizli sozcugumuz'
 app.json_encoder = ObjectIdEncoder
-
 
 db = pypyodbc.connect(
         'Driver={SQL Server};'
@@ -26,21 +24,26 @@ db = pypyodbc.connect(
         'Trusted_Connection=True;'
     )
 
-
-@app.route('/')
-def index():
-    return "Mobil Uygulama için servisler..."
-
-
 @app.route('/api')
 def Siranoalvegetir():
     imlec = db.cursor()
     imlec.execute("INSERT INTO Numbers VALUES('Bekliyor')")
     db.commit()
-    imlec.execute('SELECT TOP(1)Id FROM Numbers order by Id desc')
-    d = {"res": imlec.fetchone()}
-    return jsonify(d)
+    d=imlec.execute('SELECT TOP(1)Id FROM Numbers order by Id desc').fetchone()
+    return {"res": d}
 
+@app.route('/api/giriskontrol/<Id>/<Password>')
+def giriskontrol(Id,Password):
+    imlec = db.cursor()
+    p=imlec.execute("SELECT Password FROM Users WHERE Id="+Id).fetchone()
+    if p:
+        d=imlec.execute("SELECT Id FROM Users WHERE Password='"+Password+"' and Id='"+Id+"'").fetchone()
+        if d:
+            return {"res": d}
+        else:
+            return "Yanlış Şifre"
+    else:
+        return "Yanlış Kullanıcı Adı"
 
 @app.route('/api/islemisonlandir')
 def Islemisonlandir():
@@ -50,8 +53,6 @@ def Islemisonlandir():
     db.commit()
     return "islem tamamlandı"
 
-
-
 @app.route('/api/islemal')
 def islemal():
     imlec = db.cursor()
@@ -59,7 +60,6 @@ def islemal():
     imlec.execute("Update Numbers Set Islemdurumu = ('İşleniyor') Where Id = (SELECT MIN(Id) FROM Numbers where Islemdurumu=('Bekliyor'))")
     db.commit()
     return "isleme alındı"
-
 
 @app.route('/api/islemdekinigoster')
 def islemdekinigoster():
@@ -74,6 +74,12 @@ def gunsonu():
     imlec.execute("TRUNCATE TABLE Numbers")
     db.commit()
     return jsonify(d)
+
+@app.route('/api/bekleyensayisigoster')
+def bekleyensayisigoster():
+    imlec = db.cursor()
+    d = imlec.execute("Select count(Id) from Numbers where Islemdurumu=('Bekliyor') and Id<(SELECT TOP(1)Id FROM Numbers order by Id desc)").fetchone()
+    return {"res":d}
 
 if __name__ == "__main__":
     app.run(debug=True)
