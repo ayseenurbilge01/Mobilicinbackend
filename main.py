@@ -6,6 +6,7 @@ from bson import ObjectId
 from flask import Flask, jsonify, render_template, request, redirect, session
 import json
 import pypyodbc
+import datetime
 
 class ObjectIdEncoder(json.JSONEncoder):
 
@@ -28,11 +29,27 @@ db = pypyodbc.connect(
 @app.route('/api', methods = ['POST'])
 def Siranoalvegetir():
     id = request.form['Id']
+    date = datetime.datetime.now()
     imlec = db.cursor()
-    imlec.execute("INSERT INTO Numbers VALUES('Bekliyor','"+id+"')")
-    db.commit()
-    d=imlec.execute("SELECT TOP(1)Id FROM Numbers WHERE Studentnumber= '"+id+"' order by Id desc").fetchone()
-    return {"res": d}
+    checks = imlec.execute("Select count(*) as 'sayisi' from Numbers where Studentnumber='"+id+"'  and ( select convert(varchar, Date, 23))=(select convert(varchar, getdate(), 23))").fetchall()
+    for row in checks:
+        count = int(row[0])
+    if(count<3):
+        imlec.execute("INSERT INTO Numbers (Transactionstatus,Studentnumber,Date) VALUES (?,?,?)", ('Bekliyor', id , date))
+        db.commit()
+        d=imlec.execute("SELECT TOP(1)Id FROM Numbers WHERE Studentnumber= '"+id+"' order by Id desc").fetchone()
+        return {"res": d}
+    else:
+        return "false"
+
+@app.route('/api/bilgilerigetir', methods = ['POST'])
+def Bilgilerigetir():
+    id = request.form['Id']
+    imlec = db.cursor()
+    checks = imlec.execute("Select * from Users where Id='"+id+"'").fetchone()
+    print({"users":{"Ad":checks[1],"Soyad":checks[2],"Tarih":checks[3],"mail":checks[4]}})
+    a ={"Ad":checks[1],"Soyad":checks[2],"Tarih":checks[3],"mail":checks[4]}
+    return  jsonify("users",a)
 
 @app.route('/api/giriskontrol', methods = ['POST'])
 def giriskontrol():
@@ -52,18 +69,20 @@ def kayit():
     db.commit()
     return "true"
 
-
-#@app.route('/api/bildirimonkisi', methods = ['POST'])
-#def Bildirimonkisi():
-#    id = request.form['Id']
-#    imlec = db.cursor()
-#    imlec.execute("Select count(Id) from Numbers where Transactionstatus=('Bekliyor') and Id<(SELECT TOP(1)Id FROM Numbers WHERE Studentnumber= '" + id + "' order by Id desc)").fetchone()
-#    return "true"
+@app.route('/api/bildirimonkisi', methods = ['POST'])
+def Bildirimonkisi():
+    id = request.form['Id']
+    imlec = db.cursor()
+    d = str(imlec.execute(
+        "Select count(Id) from Numbers where Transactionstatus=('Bekliyor') and Id<(SELECT TOP(1)Id FROM Numbers WHERE Studentnumber= '" + id + "' order by Id desc)").fetchone())
+    if d[1:3] != "10":
+        return "true"
+    else:
+        return "false"
 
 @app.route('/api/islemisonlandir')
 def Islemisonlandir():
     imlec = db.cursor()
-    imlec.execute("SELECT MIN(Id) FROM Numbers where Transactionstatus=('İşleniyor')").fetchone()
     imlec.execute("Update Numbers Set Transactionstatus = ('Tamamlandı') Where Id = (SELECT MIN(Id) FROM Numbers where Transactionstatus=('İşleniyor'))")
     db.commit()
     return "islem tamamlandı"
@@ -71,7 +90,6 @@ def Islemisonlandir():
 @app.route('/api/islemal')
 def islemal():
     imlec = db.cursor()
-    imlec.execute("SELECT MIN(Id) FROM Numbers where Islemdurumu=('Bekliyor')").fetchone()
     imlec.execute("Update Numbers Set Transactionstatus = ('İşleniyor') Where Id = (SELECT MIN(Id) FROM Numbers where Transactionstatus=('Bekliyor'))")
     db.commit()
     return "isleme alındı"
