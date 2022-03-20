@@ -25,6 +25,13 @@ db = pypyodbc.connect(
         'Database=DbQ-Matic;'
         'Trusted_Connection=True;'
     )
+@app.route('/api/siranogetir', methods = ['POST'])
+def Siranogetir():
+    id = request.form['Id']
+    imlec = db.cursor()
+    d=imlec.execute("SELECT TOP(1)Id FROM Numbers WHERE Studentnumber= '"+id+"' order by Id desc").fetchone()
+    return {"res": d}
+
 
 @app.route('/api', methods = ['POST'])
 def Siranoalvegetir():
@@ -47,9 +54,7 @@ def Bilgilerigetir():
     id = request.form['Id']
     imlec = db.cursor()
     checks = imlec.execute("Select * from Users where Id='"+id+"'").fetchone()
-    print({"users":{"Ad":checks[1],"Soyad":checks[2],"Tarih":checks[3],"mail":checks[4]}})
-    a ={"Ad":checks[1],"Soyad":checks[2],"Tarih":checks[3],"mail":checks[4]}
-    return  jsonify("users",a)
+    return  jsonify({"Ad":checks[1],"Soyad":checks[2],"Tarih":checks[3],"mail":checks[4]})
 
 @app.route('/api/giriskontrol', methods = ['POST'])
 def giriskontrol():
