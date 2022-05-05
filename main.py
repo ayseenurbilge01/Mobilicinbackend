@@ -30,8 +30,10 @@ def Siranogetir():
     id = request.form['Id']
     imlec = db.cursor()
     d=imlec.execute("SELECT TOP(1)Id FROM Numbers WHERE Studentnumber= '"+id+"' order by Id desc").fetchone()
-    return {"res": d}
-
+    if not d:
+        return "null"
+    else:
+        return {"res": d}
 
 @app.route('/api', methods = ['POST'])
 def Siranoalvegetir():
@@ -74,17 +76,6 @@ def kayit():
     db.commit()
     return "true"
 
-@app.route('/api/bildirimonkisi', methods = ['POST'])
-def Bildirimonkisi():
-    id = request.form['Id']
-    imlec = db.cursor()
-    d = str(imlec.execute(
-        "Select count(Id) from Numbers where Transactionstatus=('Bekliyor') and Id<(SELECT TOP(1)Id FROM Numbers WHERE Studentnumber= '" + id + "' order by Id desc)").fetchone())
-    if d[1:3] != "10":
-        return "true"
-    else:
-        return "false"
-
 @app.route('/api/islemisonlandir')
 def Islemisonlandir():
     imlec = db.cursor()
@@ -113,12 +104,7 @@ def gunsonu():
     db.commit()
     return jsonify(d)
 
-@app.route('/api/bekleyensayisigoster', methods = ['POST'])
-def bekleyensayisigoster():
-    id = request.form['Id']
-    imlec = db.cursor()
-    d = imlec.execute("Select count(Id) from Numbers where Transactionstatus=('Bekliyor') and Id<(SELECT TOP(1)Id FROM Numbers WHERE Studentnumber= '"+id+"' order by Id desc)").fetchone()
-    return {"res":d}
+
 
 if __name__ == "__main__":
     app.run(debug=True)
